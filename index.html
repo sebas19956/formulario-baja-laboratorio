@@ -61,21 +61,6 @@
                 setShowReport(true);
             };
 
-            const handleExportJSON = () => {
-                const reportData = {
-                    reportNumber,
-                    ...formData,
-                    generatedDate: new Date().toISOString(),
-                };
-                const dataStr = JSON.stringify(reportData, null, 2);
-                const dataBlob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = `reporte_baja_${reportNumber}.json`;
-                link.click();
-            };
-
             const handleExportCSV = () => {
                 const csvData = [
                     ["Campo", "Valor"],
@@ -104,50 +89,6 @@
                 const link = document.createElement("a");
                 link.href = url;
                 link.download = `reporte_baja_${reportNumber}.csv`;
-                link.click();
-            };
-
-            const handleExportTXT = () => {
-                const txtContent = `
-LABORATORIO DE FÍSICA
-REPORTE DE BAJA DE EQUIPOS Y MATERIALES
-
-Reporte No: ${reportNumber}
-Fecha de Generación: ${new Date().toLocaleDateString("es-ES")}
-
-=== INFORMACIÓN DEL ${formData.itemCategory.toUpperCase()} ===
-Categoría: ${formData.itemCategory === "equipo" ? "Equipo" : "Material"}
-Tipo: ${formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? formData.customItemName : getItemTypes().find(item => item.value === formData.itemType)?.label || formData.itemType}
-Marca: ${formData.brand || "No especificada"}
-Modelo: ${formData.model || "No especificado"}
-Número de Serie: ${formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"}
-Número de Inventario: ${formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"}
-Ubicación: ${formData.labLocation || "No especificada"}
-
-=== ESTADO Y MOTIVO DE BAJA ===
-Estado: ${formData.itemStatus}
-Motivo de Baja: ${formData.decommissionReason}
-Decisión de Baja: ${formData.proceedWithDecommission === "si-baja" ? "Sí, proceder con la baja" : formData.proceedWithDecommission === "no-baja" ? "No, mantener en inventario" : formData.proceedWithDecommission === "reparar" ? "Intentar reparación primero" : formData.proceedWithDecommission === "evaluar" ? "Requiere evaluación adicional" : formData.proceedWithDecommission}
-
-=== INFORMACIÓN DEL RESPONSABLE ===
-Nombre: ${formData.responsibleName}
-Cargo: ${formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" : formData.responsiblePosition === "coordinador" ? "Coordinador" : formData.responsiblePosition === "monitor" ? "Monitor" : formData.responsiblePosition}
-Departamento: ${formData.department}
-Fecha de Baja: ${new Date(formData.decommissionDate).toLocaleDateString("es-ES")}
-
-=== OBSERVACIONES ===
-${formData.observations || "Ninguna"}
-
----
-Generado automáticamente por el Sistema de Baja de Equipos
-Laboratorio de Física
-                `;
-                
-                const dataBlob = new Blob([txtContent], { type: "text/plain;charset=utf-8;" });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = `reporte_baja_${reportNumber}.txt`;
                 link.click();
             };
 
@@ -309,14 +250,8 @@ Laboratorio de Física
                                 <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                                     🖨️ Imprimir Reporte
                                 </button>
-                                <button onClick={handleExportJSON} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                                    📄 Descargar JSON
-                                </button>
                                 <button onClick={handleExportCSV} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
                                     📊 Descargar CSV
-                                </button>
-                                <button onClick={handleExportTXT} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                                    📝 Descargar TXT
                                 </button>
                             </div>
                         </div>
@@ -622,19 +557,6 @@ Laboratorio de Física
                                     </div>
                                 </form>
                             </div>
-                        </div>
-
-                        <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-                            <h4 className="font-semibold mb-3">Instrucciones para el Laboratorio de Física:</h4>
-                            <ul className="text-sm text-gray-600 space-y-1">
-                                <li>• Los campos marcados con (*) son obligatorios</li>
-                                <li>• Seleccione "Equipo" para instrumentos de medición, computadoras, etc.</li>
-                                <li>• Seleccione "Material" para cristalería, reactivos, herramientas, etc.</li>
-                                <li>• Si el elemento no tiene número de inventario, desmarque la casilla correspondiente</li>
-                                <li>• Para elementos con estado desconocido, seleccione "Estado Desconocido"</li>
-                                <li>• Al enviar el formulario se generará automáticamente un reporte imprimible</li>
-                                <li>• El reporte incluye un número único de identificación para seguimiento</li>
-                            </ul>
                         </div>
                     </div>
                 </div>
