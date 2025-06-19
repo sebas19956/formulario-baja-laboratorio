@@ -62,34 +62,148 @@
             };
 
             const handleExportCSV = () => {
-                const csvData = [
-                    ["Campo", "Valor"],
+                // Función para limpiar texto y evitar problemas con comas y comillas
+                const cleanText = (text) => {
+                    if (!text) return "";
+                    return String(text).replace(/"/g, '""'); // Escapar comillas dobles
+                };
+
+                // Función para formatear valores de select
+                const formatSelectValue = (key, value) => {
+                    const mappings = {
+                        itemCategory: {
+                            "equipo": "Equipo de Laboratorio",
+                            "material": "Material de Laboratorio"
+                        },
+                        itemStatus: {
+                            "funcional": "Funcional",
+                            "no-funcional": "No Funcional",
+                            "parcialmente-funcional": "Parcialmente Funcional",
+                            "desconocido": "Estado Desconocido"
+                        },
+                        decommissionReason: {
+                            "obsolescencia": "Obsolescencia Tecnológica",
+                            "daño-irreparable": "Daño Irreparable",
+                            "costo-reparacion": "Costo de Reparación Elevado",
+                            "fin-vida-util": "Fin de Vida Útil",
+                            "reemplazo": "Reemplazo por Equipo Nuevo",
+                            "robo-perdida": "Robo o Pérdida",
+                            "reorganizacion": "Reorganización de Laboratorio",
+                            "contaminacion": "Contaminación",
+                            "descalibracion": "Descalibración Permanente",
+                            "otro": "Otro"
+                        },
+                        proceedWithDecommission: {
+                            "si-baja": "Sí, proceder con la baja",
+                            "no-baja": "No, mantener en inventario",
+                            "reparar": "Intentar reparación primero",
+                            "evaluar": "Requiere evaluación adicional"
+                        },
+                        responsiblePosition: {
+                            "tecnico-laboratorio": "Técnico de Laboratorio",
+                            "coordinador": "Coordinador",
+                            "monitor": "Monitor"
+                        }
+                    };
+                    
+                    return mappings[key] && mappings[key][value] ? mappings[key][value] : value;
+                };
+
+                // Obtener el tipo formateado
+                const getFormattedItemType = () => {
+                    if (formData.itemType === "otro-equipo" || formData.itemType === "otro-material") {
+                        return formData.customItemName || "No especificado";
+                    }
+                    const itemTypes = getItemTypes();
+                    const found = itemTypes.find(item => item.value === formData.itemType);
+                    return found ? found.label : formData.itemType;
+                };
+
+                // Crear el contenido CSV con estructura organizada
+                const csvRows = [
+                    // Encabezado
+                    ["LABORATORIO DE FÍSICA - REPORTE DE BAJA DE EQUIPOS Y MATERIALES"],
+                    [""],
                     ["Número de Reporte", reportNumber],
-                    ["Fecha de Generación", new Date().toLocaleDateString("es-ES")],
-                    ["Categoría", formData.itemCategory === "equipo" ? "Equipo" : "Material"],
-                    ["Tipo", formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? formData.customItemName : getItemTypes().find(item => item.value === formData.itemType)?.label || formData.itemType],
+                    ["Fecha de Generación", new Date().toLocaleDateString("es-ES") + " " + new Date().toLocaleTimeString("es-ES")],
+                    [""],
+                    
+                    // Información del elemento
+                    ["=== INFORMACIÓN DEL ELEMENTO ==="],
+                    ["Categoría", formatSelectValue("itemCategory", formData.itemCategory)],
+                    ["Tipo Específico", getFormattedItemType()],
                     ["Marca", formData.brand || "No especificada"],
                     ["Modelo", formData.model || "No especificado"],
-                    ["Número de Serie", formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"],
-                    ["Número de Inventario", formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"],
-                    ["Ubicación", formData.labLocation || "No especificada"],
-                    ["Estado", formData.itemStatus],
-                    ["Motivo de Baja", formData.decommissionReason],
-                    ["Decisión de Baja", formData.proceedWithDecommission === "si-baja" ? "Sí, proceder con la baja" : formData.proceedWithDecommission === "no-baja" ? "No, mantener en inventario" : formData.proceedWithDecommission === "reparar" ? "Intentar reparación primero" : formData.proceedWithDecommission === "evaluar" ? "Requiere evaluación adicional" : formData.proceedWithDecommission],
-                    ["Responsable", formData.responsibleName],
-                    ["Cargo", formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" : formData.responsiblePosition === "coordinador" ? "Coordinador" : formData.responsiblePosition === "monitor" ? "Monitor" : formData.responsiblePosition],
-                    ["Departamento", formData.department],
-                    ["Fecha de Baja", new Date(formData.decommissionDate).toLocaleDateString("es-ES")],
-                    ["Observaciones", formData.observations || "Ninguna"]
+                    ["Número de Serie", formData.hasSerialNumber ? (formData.serialNumber || "No especificado") : "Sin número de serie"],
+                    ["Número de Inventario", formData.hasInventoryNumber ? (formData.inventoryNumber || "No asignado") : "Sin número de inventario"],
+                    ["Ubicación en Laboratorio", formData.labLocation || "No especificada"],
+                    [""],
+                    
+                    // Decisión y motivo de baja
+                    ["=== DECISIÓN Y MOTIVO DE BAJA ==="],
+                    ["Decisión de Baja", formatSelectValue("proceedWithDecommission", formData.proceedWithDecommission)],
                 ];
+
+                // Solo agregar estado y motivo si se procede con la baja
+                if (formData.proceedWithDecommission === "si-baja") {
+                    csvRows.push(
+                        ["Estado del Elemento", formatSelectValue("itemStatus", formData.itemStatus)],
+                        ["Motivo de Baja", formatSelectValue("decommissionReason", formData.decommissionReason)]
+                    );
+                } else {
+                    csvRows.push(
+                        ["Estado del Elemento", "No aplica"],
+                        ["Motivo de Baja", "No aplica"]
+                    );
+                }
+
+                csvRows.push(
+                    [""],
+                    
+                    // Información del responsable
+                    ["=== INFORMACIÓN DEL RESPONSABLE ==="],
+                    ["Nombre Completo", formData.responsibleName || "No especificado"],
+                    ["Cargo/Posición", formatSelectValue("responsiblePosition", formData.responsiblePosition) || "No especificado"],
+                    ["Departamento", formData.department || "No especificado"],
+                    ["Fecha de Baja", new Date(formData.decommissionDate).toLocaleDateString("es-ES")],
+                    [""],
+                    
+                    // Observaciones
+                    ["=== OBSERVACIONES ==="],
+                    ["Observaciones Adicionales", formData.observations || "Ninguna"],
+                    [""],
+                    
+                    // Pie de página
+                    ["=== INFORMACIÓN DEL SISTEMA ==="],
+                    ["Generado por", "Sistema de Baja de Equipos - Laboratorio de Física"],
+                    ["Fecha y Hora de Generación", new Date().toLocaleString("es-ES")],
+                    ["Estado del Reporte", "Generado Automáticamente"]
+                );
                 
-                const csvContent = csvData.map(row => row.map(field => `"${field}"`).join(",")).join("\n");
-                const dataBlob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                // Convertir a CSV con formato correcto
+                const csvContent = csvRows.map(row => {
+                    if (row.length === 1) {
+                        // Para títulos de sección o líneas vacías
+                        return `"${cleanText(row[0])}"`;
+                    } else if (row.length === 2) {
+                        // Para pares campo-valor
+                        return `"${cleanText(row[0])}","${cleanText(row[1])}"`;
+                    }
+                    return row.map(field => `"${cleanText(field)}"`).join(",");
+                }).join("\n");
+                
+                // Agregar BOM para UTF-8 (para que Excel lo abra correctamente)
+                const BOM = "\uFEFF";
+                const finalContent = BOM + csvContent;
+                
+                // Crear y descargar el archivo
+                const dataBlob = new Blob([finalContent], { type: "text/csv;charset=utf-8;" });
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement("a");
                 link.href = url;
-                link.download = `reporte_baja_${reportNumber}.csv`;
+                link.download = `Reporte_Baja_${reportNumber}_${new Date().toISOString().split('T')[0]}.csv`;
                 link.click();
+                URL.revokeObjectURL(url);
             };
 
             const getItemTypes = () => {
@@ -169,35 +283,40 @@
 
                             <div className="mb-8">
                                 <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">
-                                    ESTADO Y MOTIVO DE BAJA
+                                    DECISIÓN Y MOTIVO DE BAJA
                                 </h3>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div><strong>Estado del Elemento:</strong> {
-                                        formData.itemStatus === "funcional" ? "Funcional" :
-                                        formData.itemStatus === "no-funcional" ? "No Funcional" :
-                                        formData.itemStatus === "parcialmente-funcional" ? "Parcialmente Funcional" :
-                                        formData.itemStatus === "desconocido" ? "Estado Desconocido" :
-                                        formData.itemStatus
-                                    }</div>
-                                    <div><strong>Motivo de Baja:</strong> {
-                                        formData.decommissionReason === "obsolescencia" ? "Obsolescencia Tecnológica" :
-                                        formData.decommissionReason === "daño-irreparable" ? "Daño Irreparable" :
-                                        formData.decommissionReason === "costo-reparacion" ? "Costo de Reparación Elevado" :
-                                        formData.decommissionReason === "fin-vida-util" ? "Fin de Vida Útil" :
-                                        formData.decommissionReason === "reemplazo" ? "Reemplazo por Equipo Nuevo" :
-                                        formData.decommissionReason === "robo-perdida" ? "Robo o Pérdida" :
-                                        formData.decommissionReason === "reorganizacion" ? "Reorganización de Laboratorio" :
-                                        formData.decommissionReason === "contaminacion" ? "Contaminación" :
-                                        formData.decommissionReason === "descalibracion" ? "Descalibración Permanente" :
-                                        formData.decommissionReason
-                                    }</div>
-                                    <div className="col-span-2"><strong>Decisión de Baja:</strong> {
+                                <div className="grid grid-cols-1 gap-4 text-sm">
+                                    <div><strong>Decisión de Baja:</strong> {
                                         formData.proceedWithDecommission === "si-baja" ? "Sí, proceder con la baja" :
                                         formData.proceedWithDecommission === "no-baja" ? "No, mantener en inventario" :
                                         formData.proceedWithDecommission === "reparar" ? "Intentar reparación primero" :
                                         formData.proceedWithDecommission === "evaluar" ? "Requiere evaluación adicional" :
                                         formData.proceedWithDecommission
                                     }</div>
+                                    
+                                    {formData.proceedWithDecommission === "si-baja" && (
+                                        <>
+                                            <div><strong>Estado del Elemento:</strong> {
+                                                formData.itemStatus === "funcional" ? "Funcional" :
+                                                formData.itemStatus === "no-funcional" ? "No Funcional" :
+                                                formData.itemStatus === "parcialmente-funcional" ? "Parcialmente Funcional" :
+                                                formData.itemStatus === "desconocido" ? "Estado Desconocido" :
+                                                formData.itemStatus
+                                            }</div>
+                                            <div><strong>Motivo de Baja:</strong> {
+                                                formData.decommissionReason === "obsolescencia" ? "Obsolescencia Tecnológica" :
+                                                formData.decommissionReason === "daño-irreparable" ? "Daño Irreparable" :
+                                                formData.decommissionReason === "costo-reparacion" ? "Costo de Reparación Elevado" :
+                                                formData.decommissionReason === "fin-vida-util" ? "Fin de Vida Útil" :
+                                                formData.decommissionReason === "reemplazo" ? "Reemplazo por Equipo Nuevo" :
+                                                formData.decommissionReason === "robo-perdida" ? "Robo o Pérdida" :
+                                                formData.decommissionReason === "reorganizacion" ? "Reorganización de Laboratorio" :
+                                                formData.decommissionReason === "contaminacion" ? "Contaminación" :
+                                                formData.decommissionReason === "descalibracion" ? "Descalibración Permanente" :
+                                                formData.decommissionReason
+                                            }</div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
@@ -250,8 +369,8 @@
                                 <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                                     🖨️ Imprimir Reporte
                                 </button>
-                                <button onClick={handleExportCSV} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
-                                    📊 Descargar CSV
+                                <button onClick={handleExportCSV} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                    📊 Descargar CSV Organizado
                                 </button>
                             </div>
                         </div>
@@ -422,53 +541,19 @@
                                     </div>
 
                                     <div className="space-y-6">
-                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">3. ESTADO Y MOTIVO DE BAJA</h3>
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">3. DECISIÓN DE BAJA</h3>
                                         
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-medium text-gray-700">Estado del Elemento *</label>
-                                                <select 
-                                                    value={formData.itemStatus}
-                                                    onChange={(e) => setFormData({...formData, itemStatus: e.target.value})}
-                                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                                    required
-                                                >
-                                                    <option value="">Seleccionar estado</option>
-                                                    <option value="funcional">Funcional</option>
-                                                    <option value="no-funcional">No Funcional</option>
-                                                    <option value="parcialmente-funcional">Parcialmente Funcional</option>
-                                                    <option value="desconocido">Estado Desconocido</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-medium text-gray-700">Motivo de Baja *</label>
-                                                <select 
-                                                    value={formData.decommissionReason}
-                                                    onChange={(e) => setFormData({...formData, decommissionReason: e.target.value})}
-                                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                                    required
-                                                >
-                                                    <option value="">Seleccionar motivo</option>
-                                                    <option value="obsolescencia">Obsolescencia Tecnológica</option>
-                                                    <option value="daño-irreparable">Daño Irreparable</option>
-                                                    <option value="costo-reparacion">Costo de Reparación Elevado</option>
-                                                    <option value="fin-vida-util">Fin de Vida Útil</option>
-                                                    <option value="reemplazo">Reemplazo por Equipo Nuevo</option>
-                                                    <option value="robo-perdida">Robo o Pérdida</option>
-                                                    <option value="reorganizacion">Reorganización de Laboratorio</option>
-                                                    <option value="contaminacion">Contaminación</option>
-                                                    <option value="descalibracion">Descalibración Permanente</option>
-                                                    <option value="otro">Otro</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-gray-700">¿Se procede con la baja del elemento? *</label>
                                             <select 
                                                 value={formData.proceedWithDecommission || ""}
-                                                onChange={(e) => setFormData({...formData, proceedWithDecommission: e.target.value})}
+                                                onChange={(e) => setFormData({
+                                                    ...formData, 
+                                                    proceedWithDecommission: e.target.value,
+                                                    // Limpiar estado y motivo si no se procede con la baja
+                                                    itemStatus: e.target.value === "si-baja" ? formData.itemStatus : "",
+                                                    decommissionReason: e.target.value === "si-baja" ? formData.decommissionReason : ""
+                                                })}
                                                 className="w-full p-2 border border-gray-300 rounded-md"
                                                 required
                                             >
@@ -479,6 +564,48 @@
                                                 <option value="evaluar">Requiere evaluación adicional</option>
                                             </select>
                                         </div>
+
+                                        {formData.proceedWithDecommission === "si-baja" && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Estado del Elemento *</label>
+                                                    <select 
+                                                        value={formData.itemStatus}
+                                                        onChange={(e) => setFormData({...formData, itemStatus: e.target.value})}
+                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        required
+                                                    >
+                                                        <option value="">Seleccionar estado</option>
+                                                        <option value="funcional">Funcional</option>
+                                                        <option value="no-funcional">No Funcional</option>
+                                                        <option value="parcialmente-funcional">Parcialmente Funcional</option>
+                                                        <option value="desconocido">Estado Desconocido</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Motivo de Baja *</label>
+                                                    <select 
+                                                        value={formData.decommissionReason}
+                                                        onChange={(e) => setFormData({...formData, decommissionReason: e.target.value})}
+                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        required
+                                                    >
+                                                        <option value="">Seleccionar motivo</option>
+                                                        <option value="obsolescencia">Obsolescencia Tecnológica</option>
+                                                        <option value="daño-irreparable">Daño Irreparable</option>
+                                                        <option value="costo-reparacion">Costo de Reparación Elevado</option>
+                                                        <option value="fin-vida-util">Fin de Vida Útil</option>
+                                                        <option value="reemplazo">Reemplazo por Equipo Nuevo</option>
+                                                        <option value="robo-perdida">Robo o Pérdida</option>
+                                                        <option value="reorganizacion">Reorganización de Laboratorio</option>
+                                                        <option value="contaminacion">Contaminación</option>
+                                                        <option value="descalibracion">Descalibración Permanente</option>
+                                                        <option value="otro">Otro</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-6">
