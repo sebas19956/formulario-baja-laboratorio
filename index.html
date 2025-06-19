@@ -1,108 +1,114 @@
-import React, { useState } from 'react';
-
-const Index = () => {
-    const [reportNumber, setReportNumber] = useState(Math.floor(Math.random() * 90000) + 10000);
-    const [formData, setFormData] = useState({
-        itemCategory: "equipo",
-        itemType: "",
-        customItemName: "",
-        brand: "",
-        model: "",
-        hasSerialNumber: false,
-        serialNumber: "",
-        hasInventoryNumber: false,
-        inventoryNumber: "",
-        labLocation: "",
-        itemStatus: "",
-        decommissionReason: "",
-        proceedWithDecommission: "",
-        responsibleName: "",
-        responsiblePosition: "",
-        department: "",
-        decommissionDate: new Date().toISOString().split('T')[0],
-        observations: "",
-    });
-    const [showReport, setShowReport] = useState(false);
-
-    const getItemTypes = () => {
-        if (formData.itemCategory === "equipo") {
-            return [
-                { value: "computadora", label: "Computadora" },
-                { value: "monitor", label: "Monitor" },
-                { value: "impresora", label: "Impresora" },
-                { value: "proyector", label: "Proyector" },
-                { value: "osciloscopio", label: "Osciloscopio" },
-                { value: "multimetro", label: "Multímetro" },
-                { value: "fuente-poder", label: "Fuente de Poder" },
-                { value: "generador-funciones", label: "Generador de Funciones" },
-                { value: "otro-equipo", label: "Otro (Especificar)" },
-            ];
-        } else {
-            return [
-                { value: "resistencia", label: "Resistencia" },
-                { value: "condensador", label: "Condensador" },
-                { value: "diodo", label: "Diodo" },
-                { value: "transistor", label: "Transistor" },
-                { value: "cable", label: "Cable" },
-                { value: "protoboard", label: "Protoboard" },
-                { value: "otro-material", label: "Otro (Especificar)" },
-            ];
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Baja - Laboratorio de Física</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { print-color-adjust: exact; }
         }
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setShowReport(true);
-    };
-
-    const handleExportJSON = () => {
-        const reportData = {
-            reportNumber,
-            ...formData,
-            generatedDate: new Date().toISOString(),
-        };
-        const dataStr = JSON.stringify(reportData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `reporte_baja_${reportNumber}.json`;
-        link.click();
-    };
-
-    const handleExportCSV = () => {
-        const csvData = [
-            ["Campo", "Valor"],
-            ["Número de Reporte", reportNumber],
-            ["Fecha de Generación", new Date().toLocaleDateString("es-ES")],
-            ["Categoría", formData.itemCategory === "equipo" ? "Equipo" : "Material"],
-            ["Tipo", formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? formData.customItemName : getItemTypes().find(item => item.value === formData.itemType)?.label || formData.itemType],
-            ["Marca", formData.brand || "No especificada"],
-            ["Modelo", formData.model || "No especificado"],
-            ["Número de Serie", formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"],
-            ["Número de Inventario", formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"],
-            ["Ubicación", formData.labLocation || "No especificada"],
-            ["Estado", formData.itemStatus],
-            ["Motivo de Baja", formData.decommissionReason],
-            ["Decisión de Baja", formData.proceedWithDecommission === "si-baja" ? "Sí, proceder con la baja" : formData.proceedWithDecommission === "no-baja" ? "No, mantener en inventario" : formData.proceedWithDecommission === "reparar" ? "Intentar reparación primero" : formData.proceedWithDecommission === "evaluar" ? "Requiere evaluación adicional" : formData.proceedWithDecommission],
-            ["Responsable", formData.responsibleName],
-            ["Cargo", formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" : formData.responsiblePosition === "coordinador" ? "Coordinador" : formData.responsiblePosition === "monitor" ? "Monitor" : formData.responsiblePosition],
-            ["Departamento", formData.department],
-            ["Fecha de Baja", new Date(formData.decommissionDate).toLocaleDateString("es-ES")],
-            ["Observaciones", formData.observations || "Ninguna"]
-        ];
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
         
-        const csvContent = csvData.map(row => row.map(field => `"${field}"`).join(",")).join("\n");
-        const dataBlob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `reporte_baja_${reportNumber}.csv`;
-        link.click();
-    };
+        function PhysicsLabDecommissionForm() {
+            const [showReport, setShowReport] = useState(false);
+            const [reportNumber, setReportNumber] = useState("");
+            const [formData, setFormData] = useState({
+                itemCategory: "",
+                itemType: "",
+                brand: "",
+                model: "",
+                serialNumber: "",
+                inventoryNumber: "",
+                hasInventoryNumber: true,
+                itemStatus: "",
+                decommissionReason: "",
+                proceedWithDecommission: "",
+                responsibleName: "",
+                responsiblePosition: "",
+                department: "Laboratorio de Física",
+                decommissionDate: new Date().toISOString().split("T")[0],
+                observations: "",
+                labLocation: "",
+                customItemName: "",
+                hasSerialNumber: false,
+            });
 
-    const handleExportTXT = () => {
-        const txtContent = `
+            const generateReportNumber = () => {
+                const date = new Date();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                const time = String(date.getHours()).padStart(2, "0") + String(date.getMinutes()).padStart(2, "0");
+                return `LAB-FIS-${year}${month}${day}-${time}`;
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const newReportNumber = generateReportNumber();
+                setReportNumber(newReportNumber);
+                setShowReport(true);
+            };
+
+            const handleExportJSON = () => {
+                const reportData = {
+                    reportNumber,
+                    ...formData,
+                    generatedDate: new Date().toISOString(),
+                };
+                const dataStr = JSON.stringify(reportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `reporte_baja_${reportNumber}.json`;
+                link.click();
+            };
+
+            const handleExportCSV = () => {
+                const csvData = [
+                    ["Campo", "Valor"],
+                    ["Número de Reporte", reportNumber],
+                    ["Fecha de Generación", new Date().toLocaleDateString("es-ES")],
+                    ["Categoría", formData.itemCategory === "equipo" ? "Equipo" : "Material"],
+                    ["Tipo", formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? formData.customItemName : getItemTypes().find(item => item.value === formData.itemType)?.label || formData.itemType],
+                    ["Marca", formData.brand || "No especificada"],
+                    ["Modelo", formData.model || "No especificado"],
+                    ["Número de Serie", formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"],
+                    ["Número de Inventario", formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"],
+                    ["Ubicación", formData.labLocation || "No especificada"],
+                    ["Estado", formData.itemStatus],
+                    ["Motivo de Baja", formData.decommissionReason],
+                    ["Decisión de Baja", formData.proceedWithDecommission === "si-baja" ? "Sí, proceder con la baja" : formData.proceedWithDecommission === "no-baja" ? "No, mantener en inventario" : formData.proceedWithDecommission === "reparar" ? "Intentar reparación primero" : formData.proceedWithDecommission === "evaluar" ? "Requiere evaluación adicional" : formData.proceedWithDecommission],
+                    ["Responsable", formData.responsibleName],
+                    ["Cargo", formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" : formData.responsiblePosition === "coordinador" ? "Coordinador" : formData.responsiblePosition === "monitor" ? "Monitor" : formData.responsiblePosition],
+                    ["Departamento", formData.department],
+                    ["Fecha de Baja", new Date(formData.decommissionDate).toLocaleDateString("es-ES")],
+                    ["Observaciones", formData.observations || "Ninguna"]
+                ];
+                
+                const csvContent = csvData.map(row => row.map(field => `"${field}"`).join(",")).join("\n");
+                const dataBlob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `reporte_baja_${reportNumber}.csv`;
+                link.click();
+            };
+
+            const handleExportTXT = () => {
+                const txtContent = `
 LABORATORIO DE FÍSICA
 REPORTE DE BAJA DE EQUIPOS Y MATERIALES
 
@@ -135,332 +141,507 @@ ${formData.observations || "Ninguna"}
 ---
 Generado automáticamente por el Sistema de Baja de Equipos
 Laboratorio de Física
-        `;
-        
-        const dataBlob = new Blob([txtContent], { type: "text/plain;charset=utf-8;" });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `reporte_baja_${reportNumber}.txt`;
-        link.click();
-    };
+                `;
+                
+                const dataBlob = new Blob([txtContent], { type: "text/plain;charset=utf-8;" });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `reporte_baja_${reportNumber}.txt`;
+                link.click();
+            };
 
-    return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Reporte de Baja de Equipos y Materiales</h1>
+            const getItemTypes = () => {
+                if (formData.itemCategory === "equipo") {
+                    return [
+                        { value: "osciloscopio", label: "Osciloscopio" },
+                        { value: "multimetro", label: "Multímetro" },
+                        { value: "generador-funciones", label: "Generador de Funciones" },
+                        { value: "fuente-poder", label: "Fuente de Poder" },
+                        { value: "balanza-precision", label: "Balanza de Precisión" },
+                        { value: "microscopio", label: "Microscopio" },
+                        { value: "espectrofotometro", label: "Espectrofotómetro" },
+                        { value: "laser", label: "Láser" },
+                        { value: "detector-radiacion", label: "Detector de Radiación" },
+                        { value: "bomba-vacio", label: "Bomba de Vacío" },
+                        { value: "centrifuga", label: "Centrífuga" },
+                        { value: "agitador-magnetico", label: "Agitador Magnético" },
+                        { value: "horno", label: "Horno/Estufa" },
+                        { value: "refrigerador", label: "Refrigerador de Laboratorio" },
+                        { value: "computadora", label: "Computadora" },
+                        { value: "proyector", label: "Proyector" },
+                        { value: "otro-equipo", label: "Otro Equipo" },
+                    ];
+                } else if (formData.itemCategory === "material") {
+                    return [
+                        { value: "cristaleria", label: "Cristalería" },
+                        { value: "instrumentos-medicion", label: "Instrumentos de Medición" },
+                        { value: "componentes-electronicos", label: "Componentes Electrónicos" },
+                        { value: "reactivos", label: "Reactivos Químicos" },
+                        { value: "materiales-opticos", label: "Materiales Ópticos" },
+                        { value: "herramientas", label: "Herramientas" },
+                        { value: "mobiliario", label: "Mobiliario de Laboratorio" },
+                        { value: "material-seguridad", label: "Material de Seguridad" },
+                        { value: "cables-conectores", label: "Cables y Conectores" },
+                        { value: "consumibles", label: "Consumibles" },
+                        { value: "otro-material", label: "Otro Material" },
+                    ];
+                }
+                return [];
+            };
 
-            {!showReport ? (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Información del Elemento */}
-                    <section className="space-y-4">
-                        <h2 className="text-xl font-semibold">Información del Elemento</h2>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Categoría *</label>
-                            <select
-                                value={formData.itemCategory}
-                                onChange={(e) => {
-                                    setFormData({ ...formData, itemCategory: e.target.value, itemType: "" });
-                                }}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                required
-                            >
-                                <option value="equipo">Equipo</option>
-                                <option value="material">Material</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Tipo *</label>
-                            <select
-                                value={formData.itemType}
-                                onChange={(e) => setFormData({ ...formData, itemType: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                required
-                            >
-                                <option value="">Seleccionar tipo</option>
-                                {getItemTypes().map((item) => (
-                                    <option key={item.value} value={item.value}>{item.label}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Especificar Tipo *</label>
-                                <input
-                                    type="text"
-                                    value={formData.customItemName}
-                                    onChange={(e) => setFormData({ ...formData, customItemName: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    required
-                                />
-                            </div>
-                        ) : null}
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Marca</label>
-                            <input
-                                type="text"
-                                value={formData.brand}
-                                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Modelo</label>
-                            <input
-                                type="text"
-                                value={formData.model}
-                                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="hasSerialNumber"
-                                checked={formData.hasSerialNumber}
-                                onChange={(e) => setFormData({ ...formData, hasSerialNumber: e.target.checked, serialNumber: "" })}
-                                className="mr-2"
-                            />
-                            <label htmlFor="hasSerialNumber" className="text-sm font-medium text-gray-700">¿Tiene número de serie?</label>
-                        </div>
-
-                        {formData.hasSerialNumber ? (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Número de Serie</label>
-                                <input
-                                    type="text"
-                                    value={formData.serialNumber}
-                                    onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                />
-                            </div>
-                        ) : null}
-
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                id="hasInventoryNumber"
-                                checked={formData.hasInventoryNumber}
-                                onChange={(e) => setFormData({ ...formData, hasInventoryNumber: e.target.checked, inventoryNumber: "" })}
-                                className="mr-2"
-                            />
-                            <label htmlFor="hasInventoryNumber" className="text-sm font-medium text-gray-700">¿Tiene número de inventario?</label>
-                        </div>
-
-                        {formData.hasInventoryNumber ? (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Número de Inventario</label>
-                                <input
-                                    type="text"
-                                    value={formData.inventoryNumber}
-                                    onChange={(e) => setFormData({ ...formData, inventoryNumber: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                />
-                            </div>
-                        ) : null}
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Ubicación en el Laboratorio</label>
-                            <input
-                                type="text"
-                                value={formData.labLocation}
-                                onChange={(e) => setFormData({ ...formData, labLocation: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-                    </section>
-
-                    {/* Estado y Motivo de Baja */}
-                    <section className="space-y-4">
-                        <h2 className="text-xl font-semibold">Estado y Motivo de Baja</h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Estado del Elemento *</label>
-                                <select
-                                    value={formData.itemStatus}
-                                    onChange={(e) => setFormData({ ...formData, itemStatus: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    required
-                                >
-                                    <option value="">Seleccionar estado</option>
-                                    <option value="funcional">Funcional</option>
-                                    <option value="no-funcional">No Funcional</option>
-                                    <option value="obsoleto">Obsoleto</option>
-                                    <option value="danado">Dañado</option>
-                                    <option value="perdido">Perdido</option>
-                                </select>
+            if (showReport) {
+                return (
+                    <div className="min-h-screen bg-white">
+                        <div className="max-w-4xl mx-auto p-8">
+                            <div className="text-center border-b-2 border-gray-800 pb-6 mb-8">
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">LABORATORIO DE FÍSICA</h1>
+                                <h2 className="text-xl font-semibold text-gray-700 mb-4">REPORTE DE BAJA DE EQUIPOS Y MATERIALES</h2>
+                                <div className="bg-gray-100 p-4 rounded-lg">
+                                    <p className="text-lg font-semibold">Reporte No: {reportNumber}</p>
+                                    <p className="text-sm text-gray-600">
+                                        Generado el: {new Date().toLocaleDateString("es-ES", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Motivo de Baja *</label>
-                                <select
-                                    value={formData.decommissionReason}
-                                    onChange={(e) => setFormData({ ...formData, decommissionReason: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    required
-                                >
-                                    <option value="">Seleccionar motivo</option>
-                                    <option value="obsolescencia">Obsolescencia</option>
-                                    <option value="dano-irreparable">Daño Irreparable</option>
-                                    <option value="costo-reparacion">Costo de Reparación Elevado</option>
-                                    <option value="perdida">Pérdida</option>
-                                    <option value="reemplazo-tecnologico">Reemplazo Tecnológico</option>
-                                </select>
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">
+                                    INFORMACIÓN DEL {formData.itemCategory.toUpperCase()}
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div><strong>Categoría:</strong> {formData.itemCategory === "equipo" ? "Equipo" : "Material"}</div>
+                                    <div><strong>Tipo:</strong> {formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? formData.customItemName : getItemTypes().find(item => item.value === formData.itemType)?.label || formData.itemType}</div>
+                                    <div><strong>Marca:</strong> {formData.brand || "No especificada"}</div>
+                                    <div><strong>Modelo:</strong> {formData.model || "No especificado"}</div>
+                                    <div><strong>Número de Serie:</strong> {formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"}</div>
+                                    <div><strong>Número de Inventario:</strong> {formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"}</div>
+                                    <div><strong>Ubicación en Laboratorio:</strong> {formData.labLocation || "No especificada"}</div>
+                                </div>
+                            </div>
+
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">
+                                    ESTADO Y MOTIVO DE BAJA
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div><strong>Estado del Elemento:</strong> {
+                                        formData.itemStatus === "funcional" ? "Funcional" :
+                                        formData.itemStatus === "no-funcional" ? "No Funcional" :
+                                        formData.itemStatus === "parcialmente-funcional" ? "Parcialmente Funcional" :
+                                        formData.itemStatus === "desconocido" ? "Estado Desconocido" :
+                                        formData.itemStatus
+                                    }</div>
+                                    <div><strong>Motivo de Baja:</strong> {
+                                        formData.decommissionReason === "obsolescencia" ? "Obsolescencia Tecnológica" :
+                                        formData.decommissionReason === "daño-irreparable" ? "Daño Irreparable" :
+                                        formData.decommissionReason === "costo-reparacion" ? "Costo de Reparación Elevado" :
+                                        formData.decommissionReason === "fin-vida-util" ? "Fin de Vida Útil" :
+                                        formData.decommissionReason === "reemplazo" ? "Reemplazo por Equipo Nuevo" :
+                                        formData.decommissionReason === "robo-perdida" ? "Robo o Pérdida" :
+                                        formData.decommissionReason === "reorganizacion" ? "Reorganización de Laboratorio" :
+                                        formData.decommissionReason === "contaminacion" ? "Contaminación" :
+                                        formData.decommissionReason === "descalibracion" ? "Descalibración Permanente" :
+                                        formData.decommissionReason
+                                    }</div>
+                                    <div className="col-span-2"><strong>Decisión de Baja:</strong> {
+                                        formData.proceedWithDecommission === "si-baja" ? "Sí, proceder con la baja" :
+                                        formData.proceedWithDecommission === "no-baja" ? "No, mantener en inventario" :
+                                        formData.proceedWithDecommission === "reparar" ? "Intentar reparación primero" :
+                                        formData.proceedWithDecommission === "evaluar" ? "Requiere evaluación adicional" :
+                                        formData.proceedWithDecommission
+                                    }</div>
+                                </div>
+                            </div>
+
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">
+                                    INFORMACIÓN DEL RESPONSABLE
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div><strong>Nombre:</strong> {formData.responsibleName}</div>
+                                    <div><strong>Cargo:</strong> {
+                                        formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" :
+                                        formData.responsiblePosition === "coordinador" ? "Coordinador" :
+                                        formData.responsiblePosition === "monitor" ? "Monitor" :
+                                        formData.responsiblePosition || "No especificado"
+                                    }</div>
+                                    <div><strong>Departamento:</strong> {formData.department}</div>
+                                    <div><strong>Fecha de Baja:</strong> {new Date(formData.decommissionDate).toLocaleDateString("es-ES")}</div>
+                                </div>
+                            </div>
+
+                            {formData.observations && (
+                                <div className="mb-8">
+                                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">OBSERVACIONES</h3>
+                                    <p className="text-sm bg-gray-50 p-4 rounded">{formData.observations}</p>
+                                </div>
+                            )}
+
+                            <div className="mt-12 grid grid-cols-3 gap-8 text-center">
+                                <div className="border-t-2 border-gray-400 pt-2">
+                                    <p className="font-semibold">Solicitado por:</p>
+                                    <p className="text-sm mt-8">{formData.responsibleName}</p>
+                                    <p className="text-xs text-gray-600">{formData.responsiblePosition}</p>
+                                </div>
+                                <div className="border-t-2 border-gray-400 pt-2">
+                                    <p className="font-semibold">Autorizado por:</p>
+                                    <p className="text-sm mt-8">_________________________</p>
+                                    <p className="text-xs text-gray-600">Jefe de Laboratorio</p>
+                                </div>
+                                <div className="border-t-2 border-gray-400 pt-2">
+                                    <p className="font-semibold">Recibido por:</p>
+                                    <p className="text-sm mt-8">_________________________</p>
+                                    <p className="text-xs text-gray-600">Administración</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-4 mt-12 pt-6 border-t-2 border-gray-200 no-print">
+                                <button onClick={() => setShowReport(false)} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                                    ← Volver al Formulario
+                                </button>
+                                <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                    🖨️ Imprimir Reporte
+                                </button>
+                                <button onClick={handleExportJSON} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                    📄 Descargar JSON
+                                </button>
+                                <button onClick={handleExportCSV} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+                                    📊 Descargar CSV
+                                </button>
+                                <button onClick={handleExportTXT} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
+                                    📝 Descargar TXT
+                                </button>
                             </div>
                         </div>
-                        <div className="space-y-4 mt-6">
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-700">¿Se procede con la baja del elemento? *</label>
-                                <select 
-                                    value={formData.proceedWithDecommission || ""}
-                                    onChange={(e) => setFormData({...formData, proceedWithDecommission: e.target.value})}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    required
-                                >
-                                    <option value="">Seleccionar decisión</option>
-                                    <option value="si-baja">Sí, proceder con la baja</option>
-                                    <option value="no-baja">No, mantener en inventario</option>
-                                    <option value="reparar">Intentar reparación primero</option>
-                                    <option value="evaluar">Requiere evaluación adicional</option>
-                                </select>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Información del Responsable */}
-                    <section className="space-y-4">
-                        <h2 className="text-xl font-semibold">Información del Responsable</h2>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Nombre Completo *</label>
-                            <input
-                                type="text"
-                                value={formData.responsibleName}
-                                onChange={(e) => setFormData({ ...formData, responsibleName: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Cargo *</label>
-                            <select
-                                value={formData.responsiblePosition}
-                                onChange={(e) => setFormData({ ...formData, responsiblePosition: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                required
-                            >
-                                <option value="">Seleccionar cargo</option>
-                                <option value="tecnico-laboratorio">Técnico de Laboratorio</option>
-                                <option value="coordinador">Coordinador</option>
-                                <option value="monitor">Monitor</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Departamento *</label>
-                            <input
-                                type="text"
-                                value={formData.department}
-                                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Fecha de Baja *</label>
-                            <input
-                                type="date"
-                                value={formData.decommissionDate}
-                                onChange={(e) => setFormData({ ...formData, decommissionDate: e.target.value })}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                required
-                            />
-                        </div>
-                    </section>
-
-                    {/* Observaciones */}
-                    <section className="space-y-4">
-                        <h2 className="text-xl font-semibold">Observaciones</h2>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Observaciones Adicionales</label>
-                            <textarea
-                                value={formData.observations}
-                                onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                                rows="4"
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-                    </section>
-
-                    {/* Botón de Enviar */}
-                    <div>
-                        <button type="submit" className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Generar Reporte de Baja
-                        </button>
                     </div>
-                </form>
-            ) : (
-                <div className="border p-4 rounded-md">
-                    <h2 className="text-xl font-semibold mb-4">Reporte de Baja No. {reportNumber}</h2>
-                    <p><strong>Fecha de Generación:</strong> {new Date().toLocaleDateString("es-ES")}</p>
+                );
+            }
 
-                    <h3 className="text-lg font-semibold mt-4">Información del Elemento</h3>
-                    <div><strong>Categoría:</strong> {formData.itemCategory === "equipo" ? "Equipo" : "Material"}</div>
-                    <div><strong>Tipo:</strong> {formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? formData.customItemName : getItemTypes().find(item => item.value === formData.itemType)?.label || formData.itemType}</div>
-                    <div><strong>Marca:</strong> {formData.brand || "No especificada"}</div>
-                    <div><strong>Modelo:</strong> {formData.model || "No especificado"}</div>
-                    <div><strong>Número de Serie:</strong> {formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"}</div>
-                    <div><strong>Número de Inventario:</strong> {formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"}</div>
-                    <div><strong>Ubicación:</strong> {formData.labLocation || "No especificada"}</div>
+            return (
+                <div className="min-h-screen bg-gray-50 py-8 px-4">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-md">
+                            <div className="text-center border-b p-6">
+                                <h1 className="text-2xl font-bold text-gray-800">LABORATORIO DE FÍSICA</h1>
+                                <p className="text-lg text-gray-600">Formulario de Baja de Equipos y Materiales de Laboratorio</p>
+                            </div>
 
-                    <h3 className="text-lg font-semibold mt-4">Estado y Motivo de Baja</h3>
-                    <div><strong>Estado del Elemento:</strong> {formData.itemStatus}</div>
-                    <div><strong>Motivo de Baja:</strong> {formData.decommissionReason}</div>
-                    <div><strong>Decisión de Baja:</strong> {
-                        formData.proceedWithDecommission === "si-baja" ? "Sí, proceder con la baja" :
-                        formData.proceedWithDecommission === "no-baja" ? "No, mantener en inventario" :
-                        formData.proceedWithDecommission === "reparar" ? "Intentar reparación primero" :
-                        formData.proceedWithDecommission === "evaluar" ? "Requiere evaluación adicional" :
-                        formData.proceedWithDecommission
-                    }</div>
+                            <div className="p-8">
+                                <form onSubmit={handleSubmit} className="space-y-8">
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">1. CLASIFICACIÓN DEL ELEMENTO</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Categoría *</label>
+                                                <select 
+                                                    value={formData.itemCategory}
+                                                    onChange={(e) => setFormData({...formData, itemCategory: e.target.value, itemType: ""})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar categoría</option>
+                                                    <option value="equipo">Equipo de Laboratorio</option>
+                                                    <option value="material">Material de Laboratorio</option>
+                                                </select>
+                                            </div>
 
-                    <h3 className="text-lg font-semibold mt-4">Información del Responsable</h3>
-                    <div><strong>Nombre:</strong> {formData.responsibleName}</div>
-                    <div><strong>Cargo:</strong> {formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" : formData.responsiblePosition === "coordinador" ? "Coordinador" : formData.responsiblePosition === "monitor" ? "Monitor" : formData.responsiblePosition}</div>
-                    <div><strong>Departamento:</strong> {formData.department}</div>
-                    <div><strong>Fecha de Baja:</strong> {new Date(formData.decommissionDate).toLocaleDateString("es-ES")}</div>
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Tipo Específico *</label>
+                                                <select 
+                                                    value={formData.itemType}
+                                                    onChange={(e) => setFormData({...formData, itemType: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    disabled={!formData.itemCategory}
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar tipo específico</option>
+                                                    {getItemTypes().map(item => (
+                                                        <option key={item.value} value={item.value}>{item.label}</option>
+                                                    ))}
+                                                </select>
+                                                
+                                                {(formData.itemType === "otro-equipo" || formData.itemType === "otro-material") && (
+                                                    <div className="space-y-2 mt-2">
+                                                        <label className="block text-sm font-medium text-gray-700">
+                                                            Especificar {formData.itemCategory === "equipo" ? "Equipo" : "Material"} *
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.customItemName || ""}
+                                                            onChange={(e) => setFormData({...formData, customItemName: e.target.value})}
+                                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                                            placeholder={`Nombre específico del ${formData.itemCategory}`}
+                                                            required
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
 
-                    <h3 className="text-lg font-semibold mt-4">Observaciones</h3>
-                    <div>{formData.observations || "Ninguna"}</div>
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">2. INFORMACIÓN TÉCNICA</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Marca</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.brand}
+                                                    onChange={(e) => setFormData({...formData, brand: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Ej: Fluke, Tektronix, Agilent"
+                                                />
+                                            </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 mt-12 pt-6 border-t-2 border-gray-200 no-print">
-                        <button onClick={() => setShowReport(false)} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
-                            ← Volver al Formulario
-                        </button>
-                        <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            🖨️ Imprimir Reporte
-                        </button>
-                        <button onClick={handleExportJSON} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                            📄 Descargar JSON
-                        </button>
-                        <button onClick={handleExportCSV} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
-                            📊 Descargar CSV
-                        </button>
-                        <button onClick={handleExportTXT} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                            📝 Descargar TXT
-                        </button>
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Modelo</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.model}
+                                                    onChange={(e) => setFormData({...formData, model: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Modelo específico"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="flex items-center space-x-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="hasSerialNumber"
+                                                        checked={formData.hasSerialNumber || false}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            hasSerialNumber: e.target.checked,
+                                                            serialNumber: e.target.checked ? formData.serialNumber : "",
+                                                        })}
+                                                        className="rounded"
+                                                    />
+                                                    <label htmlFor="hasSerialNumber" className="text-sm font-medium text-gray-700">
+                                                        El elemento tiene número de serie
+                                                    </label>
+                                                </div>
+
+                                                {formData.hasSerialNumber && (
+                                                    <div className="space-y-2">
+                                                        <label className="block text-sm font-medium text-gray-700">Número de Serie</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.serialNumber}
+                                                            onChange={(e) => setFormData({...formData, serialNumber: e.target.value})}
+                                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                                            placeholder="Número de serie del fabricante"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Ubicación en Laboratorio</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.labLocation}
+                                                    onChange={(e) => setFormData({...formData, labLocation: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Ej: Mesa 3, Estante A, Sala 201"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center space-x-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="hasInventoryNumber"
+                                                    checked={formData.hasInventoryNumber}
+                                                    onChange={(e) => setFormData({...formData, hasInventoryNumber: e.target.checked})}
+                                                    className="rounded"
+                                                />
+                                                <label htmlFor="hasInventoryNumber" className="text-sm font-medium text-gray-700">
+                                                    El elemento tiene número de inventario
+                                                </label>
+                                            </div>
+
+                                            {formData.hasInventoryNumber && (
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Número de Inventario</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.inventoryNumber}
+                                                        onChange={(e) => setFormData({...formData, inventoryNumber: e.target.value})}
+                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        placeholder="Número de inventario institucional"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">3. ESTADO Y MOTIVO DE BAJA</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Estado del Elemento *</label>
+                                                <select 
+                                                    value={formData.itemStatus}
+                                                    onChange={(e) => setFormData({...formData, itemStatus: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar estado</option>
+                                                    <option value="funcional">Funcional</option>
+                                                    <option value="no-funcional">No Funcional</option>
+                                                    <option value="parcialmente-funcional">Parcialmente Funcional</option>
+                                                    <option value="desconocido">Estado Desconocido</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Motivo de Baja *</label>
+                                                <select 
+                                                    value={formData.decommissionReason}
+                                                    onChange={(e) => setFormData({...formData, decommissionReason: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar motivo</option>
+                                                    <option value="obsolescencia">Obsolescencia Tecnológica</option>
+                                                    <option value="daño-irreparable">Daño Irreparable</option>
+                                                    <option value="costo-reparacion">Costo de Reparación Elevado</option>
+                                                    <option value="fin-vida-util">Fin de Vida Útil</option>
+                                                    <option value="reemplazo">Reemplazo por Equipo Nuevo</option>
+                                                    <option value="robo-perdida">Robo o Pérdida</option>
+                                                    <option value="reorganizacion">Reorganización de Laboratorio</option>
+                                                    <option value="contaminacion">Contaminación</option>
+                                                    <option value="descalibracion">Descalibración Permanente</option>
+                                                    <option value="otro">Otro</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-700">¿Se procede con la baja del elemento? *</label>
+                                            <select 
+                                                value={formData.proceedWithDecommission || ""}
+                                                onChange={(e) => setFormData({...formData, proceedWithDecommission: e.target.value})}
+                                                className="w-full p-2 border border-gray-300 rounded-md"
+                                                required
+                                            >
+                                                <option value="">Seleccionar decisión</option>
+                                                <option value="si-baja">Sí, proceder con la baja</option>
+                                                <option value="no-baja">No, mantener en inventario</option>
+                                                <option value="reparar">Intentar reparación primero</option>
+                                                <option value="evaluar">Requiere evaluación adicional</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">4. INFORMACIÓN DEL RESPONSABLE</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Nombre Completo *</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.responsibleName}
+                                                    onChange={(e) => setFormData({...formData, responsibleName: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Nombre del responsable"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Cargo/Posición</label>
+                                                <select 
+                                                    value={formData.responsiblePosition}
+                                                    onChange={(e) => setFormData({...formData, responsiblePosition: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                >
+                                                    <option value="">Seleccionar cargo</option>
+                                                    <option value="tecnico-laboratorio">Técnico de Laboratorio</option>
+                                                    <option value="coordinador">Coordinador</option>
+                                                    <option value="monitor">Monitor</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Departamento</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.department}
+                                                    onChange={(e) => setFormData({...formData, department: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Departamento o área"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Fecha de Baja *</label>
+                                                <input
+                                                    type="date"
+                                                    value={formData.decommissionDate}
+                                                    onChange={(e) => setFormData({...formData, decommissionDate: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">5. OBSERVACIONES ADICIONALES</h3>
+                                        
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-700">Observaciones</label>
+                                            <textarea
+                                                value={formData.observations}
+                                                onChange={(e) => setFormData({...formData, observations: e.target.value})}
+                                                className="w-full p-2 border border-gray-300 rounded-md"
+                                                placeholder="Detalles adicionales: condiciones especiales, accesorios incluidos, historial de reparaciones, razones específicas de la baja, etc."
+                                                rows="4"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center pt-6 border-t">
+                                        <button type="submit" className="px-8 py-3 text-lg bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
+                                            📄 Generar Reporte de Baja
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+                            <h4 className="font-semibold mb-3">Instrucciones para el Laboratorio de Física:</h4>
+                            <ul className="text-sm text-gray-600 space-y-1">
+                                <li>• Los campos marcados con (*) son obligatorios</li>
+                                <li>• Seleccione "Equipo" para instrumentos de medición, computadoras, etc.</li>
+                                <li>• Seleccione "Material" para cristalería, reactivos, herramientas, etc.</li>
+                                <li>• Si el elemento no tiene número de inventario, desmarque la casilla correspondiente</li>
+                                <li>• Para elementos con estado desconocido, seleccione "Estado Desconocido"</li>
+                                <li>• Al enviar el formulario se generará automáticamente un reporte imprimible</li>
+                                <li>• El reporte incluye un número único de identificación para seguimiento</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            )}
-        </div>
-    );
-};
+            );
+        }
 
-export default Index;
+        ReactDOM.render(<PhysicsLabDecommissionForm />, document.getElementById('root'));
+    </script>
+</body>
+</html>
