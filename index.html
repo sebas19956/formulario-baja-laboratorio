@@ -173,6 +173,14 @@
                     ["Observaciones Adicionales", formData.observations || "Ninguna"],
                     [""],
                     
+                    // Firmas simplificadas
+                    ["=== FIRMAS Y AUTORIZACIONES ==="],
+                    ["Solicitado por", formData.responsibleName || "No especificado"],
+                    ["Cargo del Solicitante", formatSelectValue("responsiblePosition", formData.responsiblePosition) || "No especificado"],
+                    ["Autorizado por", ""],
+                    ["Recibido por", ""],
+                    [""],
+                    
                     // Pie de página
                     ["=== INFORMACIÓN DEL SISTEMA ==="],
                     ["Generado por", "Sistema de Baja de Equipos - Laboratorio de Física"],
@@ -180,7 +188,7 @@
                     ["Estado del Reporte", "Generado Automáticamente"]
                 );
                 
-                // Convertir a CSV con formato correcto
+                // Convertir a CSV con formato correcto UTF-8
                 const csvContent = csvRows.map(row => {
                     if (row.length === 1) {
                         // Para títulos de sección o líneas vacías
@@ -192,12 +200,14 @@
                     return row.map(field => `"${cleanText(field)}"`).join(",");
                 }).join("\n");
                 
-                // Agregar BOM para UTF-8 (para que Excel lo abra correctamente)
+                // Agregar BOM para UTF-8 (para que Excel lo abra correctamente con acentos)
                 const BOM = "\uFEFF";
                 const finalContent = BOM + csvContent;
                 
-                // Crear y descargar el archivo
-                const dataBlob = new Blob([finalContent], { type: "text/csv;charset=utf-8;" });
+                // Crear y descargar el archivo con codificación UTF-8
+                const dataBlob = new Blob([finalContent], { 
+                    type: "text/csv;charset=utf-8;" 
+                });
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement("a");
                 link.href = url;
@@ -344,21 +354,25 @@
                                 </div>
                             )}
 
+                            {/* Firmas simplificadas */}
                             <div className="mt-12 grid grid-cols-3 gap-8 text-center">
                                 <div className="border-t-2 border-gray-400 pt-2">
                                     <p className="font-semibold">Solicitado por:</p>
                                     <p className="text-sm mt-8">{formData.responsibleName}</p>
-                                    <p className="text-xs text-gray-600">{formData.responsiblePosition}</p>
+                                    <p className="text-xs text-gray-600">{
+                                        formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" :
+                                        formData.responsiblePosition === "coordinador" ? "Coordinador" :
+                                        formData.responsiblePosition === "monitor" ? "Monitor" :
+                                        formData.responsiblePosition
+                                    }</p>
                                 </div>
                                 <div className="border-t-2 border-gray-400 pt-2">
                                     <p className="font-semibold">Autorizado por:</p>
                                     <p className="text-sm mt-8">_________________________</p>
-                                    <p className="text-xs text-gray-600">Jefe de Laboratorio</p>
                                 </div>
                                 <div className="border-t-2 border-gray-400 pt-2">
                                     <p className="font-semibold">Recibido por:</p>
                                     <p className="text-sm mt-8">_________________________</p>
-                                    <p className="text-xs text-gray-600">Administración</p>
                                 </div>
                             </div>
 
@@ -370,7 +384,7 @@
                                     🖨️ Imprimir Reporte
                                 </button>
                                 <button onClick={handleExportCSV} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                                    📊 Descargar CSV Organizado
+                                    📊 Descargar CSV (UTF-8)
                                 </button>
                             </div>
                         </div>
