@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario de Baja - Laboratorio de Física</title>
+    <title>Formulario de Baja - Laboratorio de Electrónica y Física</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,17 +13,86 @@
             .no-print { display: none !important; }
             body { print-color-adjust: exact; }
         }
+        .label-preview {
+            width: 300px;
+            height: 200px;
+            border: 2px dashed #dc2626;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+        .label-preview::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(220, 38, 38, 0.1) 10px,
+                rgba(220, 38, 38, 0.1) 20px
+            );
+            pointer-events: none;
+        }
+        .label-content {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dc2626;
+        }
+        .photo-preview {
+            max-width: 200px;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+        }
+        .photo-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background-color: #f9fafb;
+            transition: all 0.3s ease;
+        }
+        .photo-upload-area:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .photo-upload-area.dragover {
+            border-color: #3b82f6;
+            background-color: #dbeafe;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
     
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useRef } = React;
         
         function PhysicsLabDecommissionForm() {
             const [showReport, setShowReport] = useState(false);
+            const [showLabelPreview, setShowLabelPreview] = useState(false);
             const [reportNumber, setReportNumber] = useState("");
+            const [equipmentPhoto, setEquipmentPhoto] = useState(null);
+            const [photoPreview, setPhotoPreview] = useState(null);
+            const fileInputRef = useRef(null);
+            const videoRef = useRef(null);
+            const canvasRef = useRef(null);
+            const [showCamera, setShowCamera] = useState(false);
+            
             const [formData, setFormData] = useState({
                 itemCategory: "",
                 itemType: "",
@@ -37,7 +106,7 @@
                 proceedWithDecommission: "",
                 responsibleName: "",
                 responsiblePosition: "",
-                department: "Laboratorio de Física",
+                area: "Laboratorio de Electrónica y Redes", // Cambiado de department
                 decommissionDate: new Date().toISOString().split("T")[0],
                 observations: "",
                 labLocation: "",
@@ -51,7 +120,7 @@
                 const month = String(date.getMonth() + 1).padStart(2, "0");
                 const day = String(date.getDate()).padStart(2, "0");
                 const time = String(date.getHours()).padStart(2, "0") + String(date.getMinutes()).padStart(2, "0");
-                return `LAB-FIS-${year}${month}${day}-${time}`;
+                return `LAB-EF-${year}${month}${day}-${time}`; // Cambiado prefijo
             };
 
             const handleSubmit = (e) => {
@@ -61,14 +130,218 @@
                 setShowReport(true);
             };
 
+            // Funciones para manejo de fotos
+            const handleFileSelect = (event) => {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    setEquipmentPhoto(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => setPhotoPreview(e.target.result);
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleDrop = (event) => {
+                event.preventDefault();
+                event.currentTarget.classList.remove('dragover');
+                const file = event.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    setEquipmentPhoto(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => setPhotoPreview(e.target.result);
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleDragOver = (event) => {
+                event.preventDefault();
+                event.currentTarget.classList.add('dragover');
+            };
+
+            const handleDragLeave = (event) => {
+                event.preventDefault();
+                event.currentTarget.classList.remove('dragover');
+            };
+
+            const startCamera = async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } // Usar cámara trasera en móviles
+                    });
+                    videoRef.current.srcObject = stream;
+                    setShowCamera(true);
+                } catch (error) {
+                    alert('No se pudo acceder a la cámara. Por favor, sube una imagen desde archivos.');
+                }
+            };
+
+            const capturePhoto = () => {
+                const video = videoRef.current;
+                const canvas = canvasRef.current;
+                const context = canvas.getContext('2d');
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0);
+                
+                canvas.toBlob((blob) => {
+                    setEquipmentPhoto(blob);
+                    setPhotoPreview(canvas.toDataURL());
+                    stopCamera();
+                });
+            };
+
+            const stopCamera = () => {
+                const stream = videoRef.current?.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                setShowCamera(false);
+            };
+
+            const removePhoto = () => {
+                setEquipmentPhoto(null);
+                setPhotoPreview(null);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            };
+
+            const getFormattedItemName = () => {
+                if (formData.itemType === "otro-equipo" || formData.itemType === "otro-material") {
+                    return formData.customItemName || "Elemento";
+                }
+                const itemTypes = getItemTypes();
+                const found = itemTypes.find(item => item.value === formData.itemType);
+                return found ? found.label : formData.itemType || "Elemento";
+            };
+
+            const generateLabelImage = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = 600;
+                canvas.height = 400;
+                
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#fee2e2');
+                gradient.addColorStop(1, '#fecaca');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 8;
+                ctx.setLineDash([20, 10]);
+                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+                
+                ctx.setLineDash([]);
+                ctx.strokeStyle = 'rgba(220, 38, 38, 0.2)';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < canvas.width + canvas.height; i += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i - canvas.height, canvas.height);
+                    ctx.stroke();
+                }
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.fillRect(50, 80, canvas.width - 100, canvas.height - 160);
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.strokeRect(50, 80, canvas.width - 100, canvas.height - 160);
+                
+                ctx.fillStyle = '#dc2626';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                ctx.font = 'bold 32px Arial';
+                ctx.fillText('⚠️ EQUIPO PARA BAJA ⚠️', canvas.width / 2, 130);
+                
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#1f2937';
+                const itemName = getFormattedItemName();
+                ctx.fillText(itemName.toUpperCase(), canvas.width / 2, 180);
+                
+                ctx.font = '18px Arial';
+                ctx.fillStyle = '#374151';
+                if (formData.brand) {
+                    ctx.fillText(`Marca: ${formData.brand}`, canvas.width / 2, 210);
+                }
+                if (formData.model) {
+                    ctx.fillText(`Modelo: ${formData.model}`, canvas.width / 2, 235);
+                }
+                if (formData.hasInventoryNumber && formData.inventoryNumber) {
+                    ctx.fillText(`Inv: ${formData.inventoryNumber}`, canvas.width / 2, 260);
+                }
+                
+                ctx.font = 'bold 16px Arial';
+                ctx.fillStyle = '#dc2626';
+                ctx.fillText(`Reporte: ${reportNumber}`, canvas.width / 2, 290);
+                
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText(`Fecha: ${new Date(formData.decommissionDate).toLocaleDateString('es-ES')}`, canvas.width / 2, 315);
+                
+                ctx.font = 'bold 16px Arial';
+                ctx.fillStyle = '#dc2626';
+                ctx.fillText('NO USAR - PENDIENTE DE BAJA', canvas.width / 2, 350);
+                
+                return canvas.toDataURL('image/png');
+            };
+
+            const downloadLabel = () => {
+                const imageData = generateLabelImage();
+                const link = document.createElement('a');
+                link.href = imageData;
+                link.download = `Etiqueta_Baja_${reportNumber}_${getFormattedItemName().replace(/\s+/g, '_')}.png`;
+                link.click();
+            };
+
+            const printLabel = () => {
+                const imageData = generateLabelImage();
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Etiqueta de Baja - ${getFormattedItemName()}</title>
+                            <style>
+                                body { 
+                                    margin: 0; 
+                                    padding: 20px; 
+                                    display: flex; 
+                                    justify-content: center; 
+                                    align-items: center; 
+                                    min-height: 100vh;
+                                    background: #f3f4f6;
+                                }
+                                img { 
+                                    max-width: 100%; 
+                                    height: auto; 
+                                    border: 1px solid #ccc;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                }
+                                @media print {
+                                    body { background: white; }
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <img src="${imageData}" alt="Etiqueta de Baja" />
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 500);
+            };
+
             const handleExportCSV = () => {
-                // Función para limpiar texto y evitar problemas con comas y comillas
                 const cleanText = (text) => {
                     if (!text) return "";
-                    return String(text).replace(/"/g, '""'); // Escapar comillas dobles
+                    return String(text).replace(/"/g, '""');
                 };
 
-                // Función para formatear valores de select
                 const formatSelectValue = (key, value) => {
                     const mappings = {
                         itemCategory: {
@@ -109,7 +382,6 @@
                     return mappings[key] && mappings[key][value] ? mappings[key][value] : value;
                 };
 
-                // Obtener el tipo formateado
                 const getFormattedItemType = () => {
                     if (formData.itemType === "otro-equipo" || formData.itemType === "otro-material") {
                         return formData.customItemName || "No especificado";
@@ -119,16 +391,12 @@
                     return found ? found.label : formData.itemType;
                 };
 
-                // Crear el contenido CSV con estructura organizada
                 const csvRows = [
-                    // Encabezado
-                    ["LABORATORIO DE FÍSICA - REPORTE DE BAJA DE EQUIPOS Y MATERIALES"],
+                    ["LABORATORIO DE ELECTRÓNICA Y FÍSICA - REPORTE DE BAJA DE EQUIPOS Y MATERIALES"],
                     [""],
                     ["Número de Reporte", reportNumber],
                     ["Fecha de Generación", new Date().toLocaleDateString("es-ES") + " " + new Date().toLocaleTimeString("es-ES")],
                     [""],
-                    
-                    // Información del elemento
                     ["=== INFORMACIÓN DEL ELEMENTO ==="],
                     ["Categoría", formatSelectValue("itemCategory", formData.itemCategory)],
                     ["Tipo Específico", getFormattedItemType()],
@@ -137,14 +405,12 @@
                     ["Número de Serie", formData.hasSerialNumber ? (formData.serialNumber || "No especificado") : "Sin número de serie"],
                     ["Número de Inventario", formData.hasInventoryNumber ? (formData.inventoryNumber || "No asignado") : "Sin número de inventario"],
                     ["Ubicación en Laboratorio", formData.labLocation || "No especificada"],
+                    ["Fotografía del Elemento", equipmentPhoto ? "Sí, incluida" : "No incluida"],
                     [""],
-                    
-                    // Decisión y motivo de baja
                     ["=== DECISIÓN Y MOTIVO DE BAJA ==="],
                     ["Decisión de Baja", formatSelectValue("proceedWithDecommission", formData.proceedWithDecommission)],
                 ];
 
-                // Solo agregar estado y motivo si se procede con la baja
                 if (formData.proceedWithDecommission === "si-baja") {
                     csvRows.push(
                         ["Estado del Elemento", formatSelectValue("itemStatus", formData.itemStatus)],
@@ -159,52 +425,39 @@
 
                 csvRows.push(
                     [""],
-                    
-                    // Información del responsable
                     ["=== INFORMACIÓN DEL RESPONSABLE ==="],
                     ["Nombre Completo", formData.responsibleName || "No especificado"],
                     ["Cargo/Posición", formatSelectValue("responsiblePosition", formData.responsiblePosition) || "No especificado"],
-                    ["Departamento", formData.department || "No especificado"],
+                    ["Área", formData.area || "No especificado"], // Cambiado de Departamento
                     ["Fecha de Baja", new Date(formData.decommissionDate).toLocaleDateString("es-ES")],
                     [""],
-                    
-                    // Observaciones
                     ["=== OBSERVACIONES ==="],
                     ["Observaciones Adicionales", formData.observations || "Ninguna"],
                     [""],
-                    
-                    // Firmas simplificadas
                     ["=== FIRMAS Y AUTORIZACIONES ==="],
                     ["Solicitado por", formData.responsibleName || "No especificado"],
                     ["Cargo del Solicitante", formatSelectValue("responsiblePosition", formData.responsiblePosition) || "No especificado"],
                     ["Autorizado por", ""],
                     ["Recibido por", ""],
                     [""],
-                    
-                    // Pie de página
                     ["=== INFORMACIÓN DEL SISTEMA ==="],
-                    ["Generado por", "Sistema de Baja de Equipos - Laboratorio de Física"],
+                    ["Generado por", "Sistema de Baja de Equipos - Laboratorio de Electrónica y Física"],
                     ["Fecha y Hora de Generación", new Date().toLocaleString("es-ES")],
                     ["Estado del Reporte", "Generado Automáticamente"]
                 );
                 
-                // Convertir a CSV con formato correcto UTF-8
                 const csvContent = csvRows.map(row => {
                     if (row.length === 1) {
-                        // Para títulos de sección o líneas vacías
                         return `"${cleanText(row[0])}"`;
                     } else if (row.length === 2) {
-                        // Para pares campo-valor
                         return `"${cleanText(row[0])}","${cleanText(row[1])}"`;
                     }
                     return row.map(field => `"${cleanText(field)}"`).join(",");
                 }).join("\n");
                 
-                // Agregar BOM para UTF-8 (para que Excel lo abra correctamente con acentos)
                 const BOM = "\uFEFF";
                 const finalContent = BOM + csvContent;
                 
-                // Crear y descargar el archivo con codificación UTF-8
                 const dataBlob = new Blob([finalContent], { 
                     type: "text/csv;charset=utf-8;" 
                 });
@@ -235,6 +488,9 @@
                         { value: "refrigerador", label: "Refrigerador de Laboratorio" },
                         { value: "computadora", label: "Computadora" },
                         { value: "proyector", label: "Proyector" },
+                        { value: "router", label: "Router/Switch" },
+                        { value: "servidor", label: "Servidor" },
+                        { value: "impresora", label: "Impresora" },
                         { value: "otro-equipo", label: "Otro Equipo" },
                     ];
                 } else if (formData.itemCategory === "material") {
@@ -249,10 +505,69 @@
                         { value: "material-seguridad", label: "Material de Seguridad" },
                         { value: "cables-conectores", label: "Cables y Conectores" },
                         { value: "consumibles", label: "Consumibles" },
+                        { value: "placas-circuitos", label: "Placas y Circuitos" },
+                        { value: "sensores", label: "Sensores" },
                         { value: "otro-material", label: "Otro Material" },
                     ];
                 }
                 return [];
+            };
+
+            // Modal para vista previa de etiqueta
+            const LabelPreviewModal = () => {
+                if (!showLabelPreview) return null;
+
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
+                        <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-semibold">Vista Previa de Etiqueta</h3>
+                                <button 
+                                    onClick={() => setShowLabelPreview(false)}
+                                    className="text-gray-500 hover:text-gray-700 text-xl"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            
+                            <div className="flex justify-center mb-4">
+                                <div className="label-preview">
+                                    <div className="label-content">
+                                        <div className="text-red-600 font-bold text-sm mb-1">⚠️ EQUIPO PARA BAJA ⚠️</div>
+                                        <div className="text-gray-800 font-bold text-xs mb-1">{getFormattedItemName().toUpperCase()}</div>
+                                        {formData.brand && <div className="text-gray-600 text-xs">Marca: {formData.brand}</div>}
+                                        {formData.model && <div className="text-gray-600 text-xs">Modelo: {formData.model}</div>}
+                                        {formData.hasInventoryNumber && formData.inventoryNumber && (
+                                            <div className="text-gray-600 text-xs">Inv: {formData.inventoryNumber}</div>
+                                        )}
+                                        <div className="text-red-600 font-bold text-xs mt-1">Reporte: {reportNumber}</div>
+                                        <div className="text-gray-500 text-xs">{new Date(formData.decommissionDate).toLocaleDateString('es-ES')}</div>
+                                        <div className="text-red-600 font-bold text-xs mt-1">NO USAR</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={downloadLabel}
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                >
+                                    📥 Descargar PNG
+                                </button>
+                                <button 
+                                    onClick={printLabel}
+                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                >
+                                    🖨️ Imprimir
+                                </button>
+                            </div>
+                            
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                                La etiqueta se genera en alta resolución (600x400px)
+                            </p>
+                        </div>
+                    </div>
+                );
             };
 
             if (showReport) {
@@ -260,7 +575,7 @@
                     <div className="min-h-screen bg-white">
                         <div className="max-w-4xl mx-auto p-8">
                             <div className="text-center border-b-2 border-gray-800 pb-6 mb-8">
-                                <h1 className="text-3xl font-bold text-gray-800 mb-2">LABORATORIO DE FÍSICA</h1>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">LABORATORIO DE ELECTRÓNICA Y FÍSICA</h1>
                                 <h2 className="text-xl font-semibold text-gray-700 mb-4">REPORTE DE BAJA DE EQUIPOS Y MATERIALES</h2>
                                 <div className="bg-gray-100 p-4 rounded-lg">
                                     <p className="text-lg font-semibold">Reporte No: {reportNumber}</p>
@@ -288,7 +603,16 @@
                                     <div><strong>Número de Serie:</strong> {formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"}</div>
                                     <div><strong>Número de Inventario:</strong> {formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"}</div>
                                     <div><strong>Ubicación en Laboratorio:</strong> {formData.labLocation || "No especificada"}</div>
+                                    <div><strong>Fotografía:</strong> {equipmentPhoto ? "Sí, incluida" : "No incluida"}</div>
                                 </div>
+                                
+                                {/* Mostrar foto en el reporte */}
+                                {photoPreview && (
+                                    <div className="mt-4">
+                                        <h4 className="font-semibold mb-2">Fotografía del Elemento:</h4>
+                                        <img src={photoPreview || "/placeholder.svg"} alt="Equipo/Material" className="photo-preview" />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mb-8">
@@ -342,7 +666,7 @@
                                         formData.responsiblePosition === "monitor" ? "Monitor" :
                                         formData.responsiblePosition || "No especificado"
                                     }</div>
-                                    <div><strong>Departamento:</strong> {formData.department}</div>
+                                    <div><strong>Área:</strong> {formData.area}</div>
                                     <div><strong>Fecha de Baja:</strong> {new Date(formData.decommissionDate).toLocaleDateString("es-ES")}</div>
                                 </div>
                             </div>
@@ -354,7 +678,6 @@
                                 </div>
                             )}
 
-                            {/* Firmas simplificadas */}
                             <div className="mt-12 grid grid-cols-3 gap-8 text-center">
                                 <div className="border-t-2 border-gray-400 pt-2">
                                     <p className="font-semibold">Solicitado por:</p>
@@ -386,8 +709,18 @@
                                 <button onClick={handleExportCSV} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                                     📊 Descargar CSV (UTF-8)
                                 </button>
+                                {formData.proceedWithDecommission === "si-baja" && (
+                                    <button 
+                                        onClick={() => setShowLabelPreview(true)} 
+                                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                    >
+                                        🏷️ Generar Etiqueta de Baja
+                                    </button>
+                                )}
                             </div>
                         </div>
+                        
+                        <LabelPreviewModal />
                     </div>
                 );
             }
@@ -397,7 +730,7 @@
                     <div className="max-w-4xl mx-auto">
                         <div className="bg-white rounded-lg shadow-md">
                             <div className="text-center border-b p-6">
-                                <h1 className="text-2xl font-bold text-gray-800">LABORATORIO DE FÍSICA</h1>
+                                <h1 className="text-2xl font-bold text-gray-800">LABORATORIO DE ELECTRÓNICA Y FÍSICA</h1>
                                 <p className="text-lg text-gray-600">Formulario de Baja de Equipos y Materiales de Laboratorio</p>
                             </div>
 
@@ -453,6 +786,111 @@
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Sección de fotografía */}
+                                        <div className="space-y-4">
+                                            <h4 className="text-lg font-semibold text-gray-800">Fotografía del Elemento</h4>
+                                            
+                                            {!photoPreview ? (
+                                                <div className="space-y-4">
+                                                    <div 
+                                                        className="photo-upload-area"
+                                                        onDrop={handleDrop}
+                                                        onDragOver={handleDragOver}
+                                                        onDragLeave={handleDragLeave}
+                                                    >
+                                                        <div className="text-center">
+                                                            <div className="text-4xl mb-2">📷</div>
+                                                            <p className="text-gray-600 mb-4">
+                                                                Arrastra una imagen aquí o haz clic para seleccionar
+                                                            </p>
+                                                            <div className="flex gap-2 justify-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => fileInputRef.current?.click()}
+                                                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                                                >
+                                                                    📁 Seleccionar Archivo
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={startCamera}
+                                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                                                >
+                                                                    📸 Tomar Foto
+                                                                </button>
+                                                            </div>
+                                                            <input
+                                                                ref={fileInputRef}
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={handleFileSelect}
+                                                                className="hidden"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    <div className="flex items-start gap-4">
+                                                        <img src={photoPreview || "/placeholder.svg"} alt="Vista previa" className="photo-preview" />
+                                                        <div className="flex-1">
+                                                            <p className="text-sm text-gray-600 mb-2">Fotografía cargada correctamente</p>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => fileInputRef.current?.click()}
+                                                                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                                                                >
+                                                                    🔄 Cambiar
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={removePhoto}
+                                                                    className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
+                                                                >
+                                                                    🗑️ Eliminar
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Modal de cámara */}
+                                            {showCamera && (
+                                                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                                                    <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                                                        <div className="text-center">
+                                                            <h3 className="text-lg font-semibold mb-4">Tomar Fotografía</h3>
+                                                            <video 
+                                                                ref={videoRef} 
+                                                                autoPlay 
+                                                                playsInline
+                                                                className="w-full rounded-lg mb-4"
+                                                            />
+                                                            <canvas ref={canvasRef} className="hidden" />
+                                                            <div className="flex gap-2 justify-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={capturePhoto}
+                                                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                                                                >
+                                                                    📸 Capturar
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={stopCamera}
+                                                                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                                                                >
+                                                                    ❌ Cancelar
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="space-y-6">
@@ -466,7 +904,7 @@
                                                     value={formData.brand}
                                                     onChange={(e) => setFormData({...formData, brand: e.target.value})}
                                                     className="w-full p-2 border border-gray-300 rounded-md"
-                                                    placeholder="Ej: Fluke, Tektronix, Agilent"
+                                                    placeholder="Ej: Fluke, Tektronix, Agilent, Cisco"
                                                 />
                                             </div>
 
@@ -520,7 +958,7 @@
                                                     value={formData.labLocation}
                                                     onChange={(e) => setFormData({...formData, labLocation: e.target.value})}
                                                     className="w-full p-2 border border-gray-300 rounded-md"
-                                                    placeholder="Ej: Mesa 3, Estante A, Sala 201"
+                                                    placeholder="Ej: Mesa 3, Estante A, Sala 201, Rack B"
                                                 />
                                             </div>
                                         </div>
@@ -564,7 +1002,6 @@
                                                 onChange={(e) => setFormData({
                                                     ...formData, 
                                                     proceedWithDecommission: e.target.value,
-                                                    // Limpiar estado y motivo si no se procede con la baja
                                                     itemStatus: e.target.value === "si-baja" ? formData.itemStatus : "",
                                                     decommissionReason: e.target.value === "si-baja" ? formData.decommissionReason : ""
                                                 })}
@@ -653,14 +1090,16 @@
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="block text-sm font-medium text-gray-700">Departamento</label>
-                                                <input
-                                                    type="text"
-                                                    value={formData.department}
-                                                    onChange={(e) => setFormData({...formData, department: e.target.value})}
+                                                <label className="block text-sm font-medium text-gray-700">Área *</label>
+                                                <select 
+                                                    value={formData.area}
+                                                    onChange={(e) => setFormData({...formData, area: e.target.value})}
                                                     className="w-full p-2 border border-gray-300 rounded-md"
-                                                    placeholder="Departamento o área"
-                                                />
+                                                    required
+                                                >
+                                                    <option value="Laboratorio de Electrónica y Redes">Laboratorio de Electrónica y Redes</option>
+                                                    <option value="Laboratorio de Física">Laboratorio de Física</option>
+                                                </select>
                                             </div>
 
                                             <div className="space-y-2">
@@ -707,4 +1146,5 @@
         ReactDOM.render(<PhysicsLabDecommissionForm />, document.getElementById('root'));
     </script>
 </body>
+</html>
 </html>
