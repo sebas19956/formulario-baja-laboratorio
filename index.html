@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Baja - Laboratorio de Física</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        
+        function PhysicsLabDecommissionForm() {
+            const [showReport, setShowReport] = useState(false);
+            const [reportNumber, setReportNumber] = useState("");
+            const [formData, setFormData] = useState({
+                itemCategory: "",
+                itemType: "",
+                brand: "",
+                model: "",
+                serialNumber: "",
+                inventoryNumber: "",
+                hasInventoryNumber: true,
+                itemStatus: "",
+                decommissionReason: "",
+                responsibleName: "",
+                responsiblePosition: "",
+                department: "Laboratorio de Física",
+                decommissionDate: new Date().toISOString().split("T")[0],
+                observations: "",
+                labLocation: "",
+                customItemName: "",
+                hasSerialNumber: false,
+            });
+
+            const generateReportNumber = () => {
+                const date = new Date();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                const time = String(date.getHours()).padStart(2, "0") + String(date.getMinutes()).padStart(2, "0");
+                return `LAB-FIS-${year}${month}${day}-${time}`;
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const newReportNumber = generateReportNumber();
+                setReportNumber(newReportNumber);
+                setShowReport(true);
+            };
+
+            const getItemTypes = () => {
+                if (formData.itemCategory === "equipo") {
+                    return [
+                        { value: "osciloscopio", label: "Osciloscopio" },
+                        { value: "multimetro", label: "Multímetro" },
+                        { value: "generador-funciones", label: "Generador de Funciones" },
+                        { value: "fuente-poder", label: "Fuente de Poder" },
+                        { value: "balanza-precision", label: "Balanza de Precisión" },
+                        { value: "microscopio", label: "Microscopio" },
+                        { value: "espectrofotometro", label: "Espectrofotómetro" },
+                        { value: "laser", label: "Láser" },
+                        { value: "detector-radiacion", label: "Detector de Radiación" },
+                        { value: "bomba-vacio", label: "Bomba de Vacío" },
+                        { value: "centrifuga", label: "Centrífuga" },
+                        { value: "agitador-magnetico", label: "Agitador Magnético" },
+                        { value: "horno", label: "Horno/Estufa" },
+                        { value: "refrigerador", label: "Refrigerador de Laboratorio" },
+                        { value: "computadora", label: "Computadora" },
+                        { value: "proyector", label: "Proyector" },
+                        { value: "otro-equipo", label: "Otro Equipo" },
+                    ];
+                } else if (formData.itemCategory === "material") {
+                    return [
+                        { value: "cristaleria", label: "Cristalería" },
+                        { value: "instrumentos-medicion", label: "Instrumentos de Medición" },
+                        { value: "componentes-electronicos", label: "Componentes Electrónicos" },
+                        { value: "reactivos", label: "Reactivos Químicos" },
+                        { value: "materiales-opticos", label: "Materiales Ópticos" },
+                        { value: "herramientas", label: "Herramientas" },
+                        { value: "mobiliario", label: "Mobiliario de Laboratorio" },
+                        { value: "material-seguridad", label: "Material de Seguridad" },
+                        { value: "cables-conectores", label: "Cables y Conectores" },
+                        { value: "consumibles", label: "Consumibles" },
+                        { value: "otro-material", label: "Otro Material" },
+                    ];
+                }
+                return [];
+            };
+
+            if (showReport) {
+                return (
+                    <div className="min-h-screen bg-white">
+                        <div className="max-w-4xl mx-auto p-8">
+                            <div className="text-center border-b-2 border-gray-800 pb-6 mb-8">
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">LABORATORIO DE FÍSICA</h1>
+                                <h2 className="text-xl font-semibold text-gray-700 mb-4">REPORTE DE BAJA DE EQUIPOS Y MATERIALES</h2>
+                                <div className="bg-gray-100 p-4 rounded-lg">
+                                    <p className="text-lg font-semibold">Reporte No: {reportNumber}</p>
+                                    <p className="text-sm text-gray-600">
+                                        Generado el: {new Date().toLocaleDateString("es-ES", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">
+                                    INFORMACIÓN DEL {formData.itemCategory.toUpperCase()}
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div><strong>Categoría:</strong> {formData.itemCategory === "equipo" ? "Equipo" : "Material"}</div>
+                                    <div><strong>Tipo:</strong> {formData.itemType === "otro-equipo" || formData.itemType === "otro-material" ? formData.customItemName : getItemTypes().find(item => item.value === formData.itemType)?.label || formData.itemType}</div>
+                                    <div><strong>Marca:</strong> {formData.brand || "No especificada"}</div>
+                                    <div><strong>Modelo:</strong> {formData.model || "No especificado"}</div>
+                                    <div><strong>Número de Serie:</strong> {formData.hasSerialNumber ? formData.serialNumber || "No especificado" : "Sin número de serie"}</div>
+                                    <div><strong>Número de Inventario:</strong> {formData.hasInventoryNumber ? formData.inventoryNumber || "No asignado" : "Sin número de inventario"}</div>
+                                    <div><strong>Ubicación en Laboratorio:</strong> {formData.labLocation || "No especificada"}</div>
+                                </div>
+                            </div>
+
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">INFORMACIÓN DEL RESPONSABLE</h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div><strong>Nombre:</strong> {formData.responsibleName}</div>
+                                    <div><strong>Cargo:</strong> {formData.responsiblePosition === "tecnico-laboratorio" ? "Técnico de Laboratorio" : formData.responsiblePosition === "coordinador" ? "Coordinador" : formData.responsiblePosition === "monitor" ? "Monitor" : formData.responsiblePosition || "No especificado"}</div>
+                                    <div><strong>Departamento:</strong> {formData.department}</div>
+                                    <div><strong>Fecha de Baja:</strong> {new Date(formData.decommissionDate).toLocaleDateString("es-ES")}</div>
+                                </div>
+                            </div>
+
+                            {formData.observations && (
+                                <div className="mb-8">
+                                    <h3 className="text-xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2">OBSERVACIONES</h3>
+                                    <p className="text-sm bg-gray-50 p-4 rounded">{formData.observations}</p>
+                                </div>
+                            )}
+
+                            <div className="mt-12 grid grid-cols-3 gap-8 text-center">
+                                <div className="border-t-2 border-gray-400 pt-2">
+                                    <p className="font-semibold">Solicitado por:</p>
+                                    <p className="text-sm mt-8">{formData.responsibleName}</p>
+                                    <p className="text-xs text-gray-600">{formData.responsiblePosition}</p>
+                                </div>
+                                <div className="border-t-2 border-gray-400 pt-2">
+                                    <p className="font-semibold">Autorizado por:</p>
+                                    <p className="text-sm mt-8">_________________________</p>
+                                    <p className="text-xs text-gray-600">Jefe de Laboratorio</p>
+                                </div>
+                                <div className="border-t-2 border-gray-400 pt-2">
+                                    <p className="font-semibold">Recibido por:</p>
+                                    <p className="text-sm mt-8">_________________________</p>
+                                    <p className="text-xs text-gray-600">Administración</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-4 mt-12 pt-6 border-t-2 border-gray-200 no-print">
+                                <button onClick={() => setShowReport(false)} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                                    ← Volver al Formulario
+                                </button>
+                                <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                    🖨️ Imprimir Reporte
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50 py-8 px-4">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-md">
+                            <div className="text-center border-b p-6">
+                                <h1 className="text-2xl font-bold text-gray-800">LABORATORIO DE FÍSICA</h1>
+                                <p className="text-lg text-gray-600">Formulario de Baja de Equipos y Materiales de Laboratorio</p>
+                            </div>
+
+                            <div className="p-8">
+                                <form onSubmit={handleSubmit} className="space-y-8">
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">1. CLASIFICACIÓN DEL ELEMENTO</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Categoría *</label>
+                                                <select 
+                                                    value={formData.itemCategory}
+                                                    onChange={(e) => setFormData({...formData, itemCategory: e.target.value, itemType: ""})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar categoría</option>
+                                                    <option value="equipo">Equipo de Laboratorio</option>
+                                                    <option value="material">Material de Laboratorio</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Tipo Específico *</label>
+                                                <select 
+                                                    value={formData.itemType}
+                                                    onChange={(e) => setFormData({...formData, itemType: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    disabled={!formData.itemCategory}
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar tipo específico</option>
+                                                    {getItemTypes().map(item => (
+                                                        <option key={item.value} value={item.value}>{item.label}</option>
+                                                    ))}
+                                                </select>
+                                                
+                                                {(formData.itemType === "otro-equipo" || formData.itemType === "otro-material") && (
+                                                    <div className="space-y-2 mt-2">
+                                                        <label className="block text-sm font-medium text-gray-700">
+                                                            Especificar {formData.itemCategory === "equipo" ? "Equipo" : "Material"} *
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.customItemName || ""}
+                                                            onChange={(e) => setFormData({...formData, customItemName: e.target.value})}
+                                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                                            placeholder={`Nombre específico del ${formData.itemCategory}`}
+                                                            required
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">2. INFORMACIÓN TÉCNICA</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Marca</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.brand}
+                                                    onChange={(e) => setFormData({...formData, brand: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Ej: Fluke, Tektronix, Agilent"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Modelo</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.model}
+                                                    onChange={(e) => setFormData({...formData, model: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Modelo específico"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="flex items-center space-x-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="hasSerialNumber"
+                                                        checked={formData.hasSerialNumber || false}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            hasSerialNumber: e.target.checked,
+                                                            serialNumber: e.target.checked ? formData.serialNumber : "",
+                                                        })}
+                                                        className="rounded"
+                                                    />
+                                                    <label htmlFor="hasSerialNumber" className="text-sm font-medium text-gray-700">
+                                                        El elemento tiene número de serie
+                                                    </label>
+                                                </div>
+
+                                                {formData.hasSerialNumber && (
+                                                    <div className="space-y-2">
+                                                        <label className="block text-sm font-medium text-gray-700">Número de Serie</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.serialNumber}
+                                                            onChange={(e) => setFormData({...formData, serialNumber: e.target.value})}
+                                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                                            placeholder="Número de serie del fabricante"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Ubicación en Laboratorio</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.labLocation}
+                                                    onChange={(e) => setFormData({...formData, labLocation: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Ej: Mesa 3, Estante A, Sala 201"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center space-x-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="hasInventoryNumber"
+                                                    checked={formData.hasInventoryNumber}
+                                                    onChange={(e) => setFormData({...formData, hasInventoryNumber: e.target.checked})}
+                                                    className="rounded"
+                                                />
+                                                <label htmlFor="hasInventoryNumber" className="text-sm font-medium text-gray-700">
+                                                    El elemento tiene número de inventario
+                                                </label>
+                                            </div>
+
+                                            {formData.hasInventoryNumber && (
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Número de Inventario</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.inventoryNumber}
+                                                        onChange={(e) => setFormData({...formData, inventoryNumber: e.target.value})}
+                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        placeholder="Número de inventario institucional"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">3. ESTADO Y MOTIVO DE BAJA</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Estado del Elemento *</label>
+                                                <select 
+                                                    value={formData.itemStatus}
+                                                    onChange={(e) => setFormData({...formData, itemStatus: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar estado</option>
+                                                    <option value="funcional">Funcional</option>
+                                                    <option value="no-funcional">No Funcional</option>
+                                                    <option value="parcialmente-funcional">Parcialmente Funcional</option>
+                                                    <option value="desconocido">Estado Desconocido</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Motivo de Baja *</label>
+                                                <select 
+                                                    value={formData.decommissionReason}
+                                                    onChange={(e) => setFormData({...formData, decommissionReason: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                >
+                                                    <option value="">Seleccionar motivo</option>
+                                                    <option value="obsolescencia">Obsolescencia Tecnológica</option>
+                                                    <option value="daño-irreparable">Daño Irreparable</option>
+                                                    <option value="costo-reparacion">Costo de Reparación Elevado</option>
+                                                    <option value="fin-vida-util">Fin de Vida Útil</option>
+                                                    <option value="reemplazo">Reemplazo por Equipo Nuevo</option>
+                                                    <option value="robo-perdida">Robo o Pérdida</option>
+                                                    <option value="reorganizacion">Reorganización de Laboratorio</option>
+                                                    <option value="contaminacion">Contaminación</option>
+                                                    <option value="descalibracion">Descalibración Permanente</option>
+                                                    <option value="otro">Otro</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">4. INFORMACIÓN DEL RESPONSABLE</h3>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Nombre Completo *</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.responsibleName}
+                                                    onChange={(e) => setFormData({...formData, responsibleName: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Nombre del responsable"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Cargo/Posición</label>
+                                                <select 
+                                                    value={formData.responsiblePosition}
+                                                    onChange={(e) => setFormData({...formData, responsiblePosition: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                >
+                                                    <option value="">Seleccionar cargo</option>
+                                                    <option value="tecnico-laboratorio">Técnico de Laboratorio</option>
+                                                    <option value="coordinador">Coordinador</option>
+                                                    <option value="monitor">Monitor</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Departamento</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.department}
+                                                    onChange={(e) => setFormData({...formData, department: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    placeholder="Departamento o área"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="block text-sm font-medium text-gray-700">Fecha de Baja *</label>
+                                                <input
+                                                    type="date"
+                                                    value={formData.decommissionDate}
+                                                    onChange={(e) => setFormData({...formData, decommissionDate: e.target.value})}
+                                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">5. OBSERVACIONES ADICIONALES</h3>
+                                        
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-gray-700">Observaciones</label>
+                                            <textarea
+                                                value={formData.observations}
+                                                onChange={(e) => setFormData({...formData, observations: e.target.value})}
+                                                className="w-full p-2 border border-gray-300 rounded-md"
+                                                placeholder="Detalles adicionales: condiciones especiales, accesorios incluidos, historial de reparaciones, razones específicas de la baja, etc."
+                                                rows="4"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center pt-6 border-t">
+                                        <button type="submit" className="px-8 py-3 text-lg bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
+                                            📄 Generar Reporte de Baja
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<PhysicsLabDecommissionForm />, document.getElementById('root'));
+    </script>
+</body>
+</html>
